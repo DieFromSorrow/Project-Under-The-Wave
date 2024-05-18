@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Under The Wave</title>
+    <link href="../static/logo.ico" rel="icon">
+    <link href="../static/index.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Under The Wave</h1>
+        <div class="input-group">
+            <label for="songId">输入歌曲ID进行分类：</label>
+            <input type="text" id="songId" placeholder="输入歌曲ID">
+            <button onclick="classifyById()">分类</button>
+        </div>
+        <div class="input-group">
+            <label for="uploadFile">上传MP3文件进行分类：</label>
+            <input type="file" id="uploadFile" accept=".mp3">
+            <button onclick="classifyByFile()">分类</button>
+        </div>
+        <div class="result" id="result">
+            <!-- 分类结果将显示在这里 -->
+        </div>
+    </div>
+</body>
+<script type="text/javascript" src="../static/index.js"></script>
+</html>

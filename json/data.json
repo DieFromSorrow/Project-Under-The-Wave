@@ -1,0 +1,15 @@
+{
+  "schoolWebURL": "http://192.168.251.75",
+  "head": {
+    "Accept": "application/json, text/javascript, */*; q=0.01",
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+    "Connection": "keep-alive",
+    "Cookie": "ABMS=4fd2395e-75eb-487c-8678-620cdd25f2f5; macAuth=c9:76:63:0a:00:00|49:79:63:0a:00:00|b7:70:63:0a:00:00",
+    "Host": "192.168.251.75",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0"
+  },
+  "username": "20213891",
+  "password": "170033",
+  "url": "http://192.168.251.75/quickauth.do?userid={}&passwd={}&wlanuserip={}&wlanacname=NFV-BASE&wlanacIp=202.206.32.195&ssid=&vlan=0&mac=49%3A79%3A63%3A0a%3A00%3A00&version=0&portalpageid=1&timestamp=1715332673305&uuid=cdf74dfb-185b-498c-b9ac-2afa5cfa432a&portaltype=&hostname="
+}

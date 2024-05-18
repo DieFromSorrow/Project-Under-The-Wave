@@ -1,0 +1,66 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(to right, #5108aa, #ff7eb3);
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+.container {
+    color: gainsboro;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+h1 {
+    margin-bottom: 20px;
+    font-size: 2.5em;
+    color: white;
+}
+strong {
+    font-style: italic;
+    color: white;
+}
+.input-group {
+    margin-bottom: 20px;
+}
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1.2em;
+}
+.input-group input[type="text"], .input-group input[type="file"] {
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    width: calc(100% - 22px);
+    font-size: 1em;
+}
+.input-group input[type="file"] {
+    padding: 8px;
+}
+.input-group button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 10px;
+    background-color: #6a1b9a;
+    color: #ffffff;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.input-group button:hover {
+    background-color: #8e24aa;
+}
+.result {
+    margin-top: 30px;
+    font-size: 1.5em;
+    padding: 15px;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.2);
+}
