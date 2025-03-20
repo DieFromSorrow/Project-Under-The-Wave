@@ -7,7 +7,7 @@ import torch
 import io
 from models import resnet34_mfcc_classifier4test
 from utils import TrackCrawler
-from datasets import MfccDateset
+from datasets import MfccDatesetOnline
 from torch.utils.data import DataLoader
 from utils import collate_fn
 
@@ -67,9 +67,9 @@ def test_wave_res_net():
 
 
 def test_mfcc_res_net():
-    dataset = MfccDateset(csv_file_path='../data/v1/test.csv')
+    dataset = MfccDatesetOnline(csv_file_path='../data/v1/test.csv')
     dataloader = DataLoader(dataset, batch_size=2,
-                            collate_fn=collate_fn.mfcc_pad_collate_fn)
+                            collate_fn=collate_fn.mfcc_pad_collate_with_lens_fn)
     for inputs, labels in dataloader:
         for mfcc in inputs:
             print(mfcc.shape)

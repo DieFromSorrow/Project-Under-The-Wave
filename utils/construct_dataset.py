@@ -1,7 +1,6 @@
 import random
 import csv
 from utils import TrackCrawler
-from math import log, pow
 
 
 def construct_dataset(track_lists_file, train_file, test_file, limit, num_test):
@@ -17,29 +16,35 @@ def construct_dataset(track_lists_file, train_file, test_file, limit, num_test):
     for genre_index, genre in enumerate(genres):
         print(f'\nProcessing genre name: {genre}, genre index: {genre_index} ...')
         track_count = 0
-        data = []
+        data = set()
+        enough = False
         for row in track_lists:
             track_list_id = row[genre_index]
-            if track_count >= limit or not track_list_id:
+            if not track_list_id:
                 break
             track_ids = None
-            beta = limit - track_count
-            alpha = pow(beta + 1, 1 / beta)
             while track_ids is None:
                 track_ids = TrackCrawler.crawl_track_id_list(track_list_id,
                                                              is_not_vip=True,
                                                              duration_limit=(100, 500),
-                                                             limit=int(log(beta, alpha)) + limit // 2,
+                                                             limit=limit - track_count + int(limit / 1.7),
                                                              shuffle=True,
                                                              use_tqdm=True, outer_tqdm=None)
 
-            for track_id in track_ids:
-                if track_count >= limit:
-                    break
+            track_ids = set(track_ids)
+            data = data.union(track_ids)
+            track_count += len(track_ids)
+            if len(data) >= limit:
+                enough = True
+                break
 
-                if track_id not in data:
-                    data.append(track_id)
-                    track_count += 1
+        if enough:
+            data = list(data)[:limit]
+            print(f'Genre {genre} is {limit} enough.')
+
+        else:
+            data = list(data)
+            print(f'Warning: {genre} only has {len(data)} songs.')
 
         random.shuffle(data)
         train_data.append(data[:limit - num_test])
@@ -63,11 +68,11 @@ def construct_dataset(track_lists_file, train_file, test_file, limit, num_test):
 
 if __name__ == '__main__':
     # 调用构造数据集函数
-    _root = '../data/v2/'
+    _root = '../data/mini/'
     _track_lists_file = _root + 'track_lists.csv'
     _train_file = _root + 'train.csv'
     _test_file = _root + 'test.csv'
-    _limit = 470  # 每个流派的歌曲id数量上限
-    _num_test = 30  # 测试集的歌曲id数量
+    _limit = 500  # 每个流派的歌曲id数量上限
+    _num_test = 20  # 测试集的歌曲id数量
 
     construct_dataset(_track_lists_file, _train_file, _test_file, _limit, _num_test)

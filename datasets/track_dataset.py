@@ -9,7 +9,7 @@ from utils import error_print, warning_print
 from utils.auto_connect import auto_connect
 
 
-class TrackDataset(Dataset):
+class TrackDatasetOnline(Dataset):
     def __init__(self, csv_file_path):
         self.data_list = []
         self.csv_to_list(csv_file_path)
@@ -40,8 +40,10 @@ class TrackDataset(Dataset):
                 waveform_mono = waveform.mean(dim=0)
                 label = torch.tensor([data[1]], dtype=torch.int64)
             except Exception as e:
+                warning_print(f'There is an EXCEPTION getting or processing data but process CONTINUE, '
+                              f'index {index} loss.')
                 index = random.randint(0, len(self) - 1)
-                warning_print('There is an EXCEPTION getting or processing data but process CONTINUE.')
+                warning_print(f'Index {index} instead')
                 error_print(e)
             else:
                 break

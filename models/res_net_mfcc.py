@@ -1,4 +1,3 @@
-import torch
 from torch import nn
 from models.blocks import ResidualBlock1d
 from models.blocks import MyGRU

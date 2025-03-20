@@ -4,7 +4,6 @@ import numpy as np
 from utils import running_print, targets_print, outputs_print, error_print, warning_print
 from torch.utils.data import DataLoader
 from torch.optim import Optimizer
-from torch.optim import lr_scheduler
 from torch.nn import Module
 from datetime import datetime
 from matplotlib import pyplot as plt
@@ -12,19 +11,26 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 class Trainer:
-    def __init__(self, model, train_dataloader, test_dataloader, optimizer, criterion):
+    def __init__(self, model, train_dataloader, test_dataloader, optimizer, criterion, lr_scheduler=None):
         self.train_dataloader: DataLoader = train_dataloader
         self.test_dataloader: DataLoader = test_dataloader
         self.optimizer: Optimizer = optimizer
         self.criterion = criterion
+        self.lr_scheduler = lr_scheduler
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model: Module = model.to(self.device)
 
         self.loss_per_batch = []
         self.loss_per_epoch = []
+        self.train_check_num = 0
+        self.train_correct_num = 0
+        self.train_acc = []
         self.accuracies = []
         self.num_trains = 0
         self.num_evals = 0
+
+        self.save_print_loss_step = 10
+
         current_time = datetime.now()
         formatted_time = current_time.strftime("%d-%H-%M")
         logs_path = f'../logs/tensorboard_logs/tb_logs_{formatted_time}/'
@@ -32,9 +38,12 @@ class Trainer:
         self.writer = SummaryWriter(log_dir=logs_path)
         pass
 
-    def train_step(self, inputs, labels, batch_idx, gradient_accumulation_steps,
-                   print_loss_step=4, print_targets_outputs_step=64):
-        inputs = inputs.to(self.device)
+    def train_step(self, inputs, labels, batch_idx, gradient_accumulation_steps, scheduler,
+                   save_print_loss_step=10, print_targets_outputs_step=100):
+        if isinstance(inputs, tuple):
+            inputs = (item.to(self.device) for item in inputs)
+        else:
+            inputs = inputs.to(self.device)
         labels = labels.to(self.device)
 
         # running_print('Propagating forward...')
@@ -52,25 +61,28 @@ class Trainer:
             if (batch_idx + 1) % gradient_accumulation_steps == 0:
                 self.optimizer.step()
                 self.optimizer.zero_grad()
+                scheduler.step()
                 # running_print('Updated weight.')
 
         else:
             self.optimizer.step()
             self.optimizer.zero_grad()
+            scheduler.step()
             # running_print('Updated weight.')
 
-        self.loss_per_batch.append(loss_item)
-
-        if print_loss_step:
-            if (batch_idx + 1) % print_loss_step == 0:
+        if save_print_loss_step:
+            if (batch_idx + 1) % save_print_loss_step == 0:
+                self.loss_per_batch.append(loss_item)
                 running_print(f'Batch {batch_idx + 1} end, num trains: {self.num_trains + 1},',
-                              'training loss: {:.5f}'.format(sum(self.loss_per_batch[-4:]) / 4))
+                              'training loss: {:.5f}'.format(loss_item))
 
         if print_targets_outputs_step:
             if (batch_idx + 1) % print_targets_outputs_step == 0:
                 max_values, max_indices = torch.max(outputs, dim=1)
                 targets_print(labels)
                 outputs_print(max_indices)
+                self.train_correct_num += (labels == max_indices).sum().item()
+                self.train_check_num += max_indices.size(0)
 
         self.num_trains += 1
         self.writer.add_scalar('Loss/batch', loss_item, self.num_trains)
@@ -82,7 +94,10 @@ class Trainer:
             correct = 0
             for batch_idx, (inputs, labels) in enumerate(self.test_dataloader):
                 # 将输入数据和标签转移到GPU上
-                inputs = inputs.to(self.device)
+                if isinstance(inputs, tuple):
+                    inputs = (item.to(self.device) for item in inputs)
+                else:
+                    inputs = inputs.to(self.device)
                 labels = labels.to(self.device)
                 # 前向传播
                 outputs = self.model(inputs)
@@ -107,31 +122,40 @@ class Trainer:
         pass
 
     def train(self, num_epochs, num_epochs_per_test, num_epochs_per_plot, num_epochs_per_save,
-              model_saving_path, lr_decay_kwargs=None, gradient_accumulation_steps=None):
+              model_saving_path, lr_scheduler_kwargs=None, gradient_accumulation_steps=None):
         scheduler = None
-        if lr_decay_kwargs:
-            scheduler = lr_scheduler.StepLR(self.optimizer, **lr_decay_kwargs)
+        num_one_epoch_loss_item = None
+        if lr_scheduler_kwargs:
+            if self.lr_scheduler is None:
+                raise ValueError('You did not set up a LR scheduler when then trainer initialized, '
+                                 'but give the lr scheduler kwargs.')
+            scheduler = self.lr_scheduler(self.optimizer, **lr_scheduler_kwargs)
 
         running_print('Train begin.')
         for epoch in range(num_epochs):
-            try:
-                running_print(f'Epoch {epoch + 1} begin.')
-                for batch, (inputs, labels) in enumerate(self.train_dataloader):
-                    try:
-                        self.train_step(inputs, labels, batch, gradient_accumulation_steps)
-                    except Exception as e:
-                        error_print(e)
-                        warning_print('There is an EXCEPTION in a batch but train CONTINUE.')
-            except Exception as e:
-                error_print(e)
-                warning_print('There is an EXCEPTION in an epoch but train CONTINUE.')
+            # try:
+            running_print(f'Epoch {epoch + 1} begin, LR: {self.optimizer.param_groups[0]["lr"]:.4f}.')
+            for batch, (inputs, labels) in enumerate(self.train_dataloader):
+                self.train_step(inputs, labels, batch, gradient_accumulation_steps, scheduler)
+                # try:
+                #     self.train_step(inputs, labels, batch, gradient_accumulation_steps, scheduler)
+                # except Exception as e:
+                #     error_print(e)
+                #     warning_print('There is an EXCEPTION in a batch but train CONTINUE.')
+            # except Exception as e:
+            #     error_print(e)
+            #     warning_print('There is an EXCEPTION in an epoch but train CONTINUE.')
 
             if (epoch + 1) % num_epochs_per_test == 0:
-                try:
-                    self.eval()
-                except Exception as e:
-                    error_print(e)
-                    warning_print('There is an EXCEPTION in testing but train CONTINUE.')
+                # try:
+                self.model.eval()
+                self.eval()
+                self.model.train()
+                # except Exception as e:
+                #     error_print(e)
+                #     warning_print('There is an EXCEPTION in testing but train CONTINUE.')
+                self.train_acc.append(100 * self.train_correct_num / self.train_check_num)
+                self.train_check_num, self.train_correct_num = 0, 0
 
             if (epoch + 1) % num_epochs_per_plot == 0:
                 self.plot_training_losses_per_batch()
@@ -139,16 +163,17 @@ class Trainer:
                 self.plot_accuracies(num_epochs_per_test)
                 pass
 
-            if (epoch + 1) % num_epochs_per_save == 0:
+            if (epoch + 1) > num_epochs * 0.75 and (epoch + 1) % num_epochs_per_save == 0:
                 now = datetime.now()
                 date_str = f'{now.year}-{now.month}-{now.day}-'
                 torch.save(self.model.state_dict(), model_saving_path + f'{date_str}epoch{epoch + 1}.pt')
                 running_print('Saved at', model_saving_path + f'{date_str}epoch{epoch + 1}.pt')
 
-            if lr_decay_kwargs:
-                scheduler.step()
-
-            avg_loss = sum(self.loss_per_batch[-len(self.train_dataloader):]) / len(self.train_dataloader)
+            if epoch == 0:
+                avg_loss = sum(self.loss_per_batch) / len(self.loss_per_batch)
+                num_one_epoch_loss_item = len(self.loss_per_batch)
+            else:
+                avg_loss = sum(self.loss_per_batch[-num_one_epoch_loss_item:]) / num_one_epoch_loss_item
             self.loss_per_epoch.append(avg_loss)
             running_print(f'Epoch {epoch + 1} end, avg loss: {avg_loss}.', '\n')
             pass
@@ -242,30 +267,26 @@ class Trainer:
         pass
 
     def plot_training_losses_per_batch(self):
-        Trainer.plot_process(self.loss_per_batch, title='Train loss per batch',
-                             x_label='batch', y_label='loss', y_min=0.0, y_max=8.8,
-                             y_ticks=[0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1,
-                                      2.3, 2.5, 2.8, 3.2, 3.5, 3.8, 4.0, 4.2, 4.5, 4.8, 5.0, 5.2, 5.5, 5.8, 6.0,
-                                      6.3, 6.5, 6.8, 7.0, 7.3, 7.5, 7.8, 8.0, 8.3, 8.5, 8.8],
+        Trainer.plot_process(self.loss_per_batch, title=f'Train loss per batch * {self.save_print_loss_step}',
+                             x_label='batch', y_label='loss', y_min=0.0, y_max=5.0,
+                             y_ticks=[0.2, 1.0, 2.0, 3.0, 4.0],
                              y_decimals=2, legend_s='loss', grid=True, alpha_s=0.382, line_style_s='-',
                              line_width_s=0.382, color_s='navy', marker_s='.', marker_size_s=3)
         pass
 
     def plot_training_losses_per_epoch(self):
         Trainer.plot_process(self.loss_per_epoch, title='Train loss per epoch',
-                             x_label='epoch', y_label='loss', y_min=0.0, y_max=7.0,
-                             y_ticks=[0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1,
-                                      2.3, 2.5, 2.8, 3.2, 3.5, 3.8, 4.0, 4.2, 4.5, 4.8, 5.0, 5.3, 5.5, 5.8, 6.0,
-                                      6.2, 6.5, 6.8, 7.0],
+                             x_label='epoch', y_label='loss', y_min=0.0, y_max=4.0,
+                             y_ticks=[0.2, 1.0, 2.0, 3.0],
                              y_decimals=2, legend_s='loss', grid=True, alpha_s=0.8, line_style_s='-',
                              line_width_s=0.8, color_s='maroon', marker_s='.', marker_size_s=3)
         pass
 
     def plot_accuracies(self, epochs_num_per_test):
-        Trainer.plot_process(self.accuracies, title=f'Accuracy per {epochs_num_per_test} epoch(s)',
+        Trainer.plot_process(self.accuracies, self.train_acc, title=f'Accuracy per {epochs_num_per_test} epoch(s)',
                              x_label='epoch', y_label='acc', y_min=0, y_max=100,
                              y_ticks=[20, 40, 50, 60, 70, 75, 80, 85, 90, 95, 100],
-                             y_decimals=1, legend_s='acc', grid=True, alpha_s=1, line_style_s='-',
-                             line_width_s=1.5, color_s='green', x_scale=epochs_num_per_test, marker_s='.',
-                             marker_size_s=5)
+                             y_decimals=1, legend_s=['eval', 'train'], grid=True, alpha_s=[1, 1],
+                             line_style_s=['-', '-'], line_width_s=[1.5, 1.5], color_s=['green', 'blue'],
+                             x_scale=epochs_num_per_test, marker_s=['.', '.'], marker_size_s=[5, 5])
         pass

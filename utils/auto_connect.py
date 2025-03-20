@@ -7,7 +7,7 @@ from utils import running_print
 
 
 date = None
-data_path = "./json/data.json"
+data_path = "../json/data.json"
 
 with open(data_path, 'r') as f:
     data = json.load(f)
