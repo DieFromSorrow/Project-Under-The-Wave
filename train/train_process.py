@@ -85,6 +85,7 @@ def train_mfcc_classifier(model_name, learning_rate, batch_size, num_epochs, ga_
     num workers: {num_workers}
     data dictionary: {data_root}
     num classes: {num_columns}''')
+
     trainer.train(num_epochs=num_epochs, num_epochs_per_test=num_epochs_per_test,
                   num_epochs_per_plot=num_epochs_per_plot, num_epochs_per_save=num_epochs_per_save,
                   lr_scheduler_kwargs={'max_lr': learning_rate * 4,
@@ -162,13 +163,13 @@ if __name__ == "__main__":
         model_name='eca_resnet18',
         learning_rate=1e-4,
         batch_size=16,
-        num_epochs=30,
+        num_epochs=50,
         ga_steps=4,
         weight_decay=1e-5,
         num_workers=4,
         data_root='../data/mini_saved_mfcc/',
         data_load_online=False,
-        pretrained_weights='../checkpoints/version1/2025-3-4-epoch30.pt'
+        pretrained_weights='../checkpoints/version1/2025-5-19-epoch50.pt'
     )
 
     kwargs_7 = dict(

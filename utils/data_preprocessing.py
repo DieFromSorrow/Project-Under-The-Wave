@@ -60,6 +60,7 @@ def waveform_to_mfcc(waveform, device, n_mfcc=32, n_fft=2048,
         'n_mels': n_mels,
         'hop_length': hop_length
     }).to(device)
+    waveform = waveform.to(device)
     mfcc = transforms(waveform)
     if norm:
         mfcc = normalize(mfcc)

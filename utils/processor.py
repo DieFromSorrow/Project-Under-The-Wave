@@ -1,6 +1,6 @@
 import torch
 import csv
-from models import resnet18_mfcc_classifier
+from models import eca_resnet18_mfcc_classifier
 from utils.data_preprocessing import mp3_to_tensor, waveform_to_mfcc
 
 
@@ -9,7 +9,7 @@ def get_device():
 
 
 def get_pretrained_model(params_pth, device):
-    model = resnet18_mfcc_classifier(in_channels=32, num_classes=65).to(device)
+    model = eca_resnet18_mfcc_classifier(in_channels=32, num_classes=32).to(device)
     model.load_state_dict(torch.load(params_pth))
     return model.eval()
 
@@ -31,9 +31,9 @@ def get_first_row(file_path):
     return first_row
 
 
-def process(waveform, model, genre_list):
+def process(waveform, model, genre_list, device):
     device = get_device()
-    mfcc = waveform_to_mfcc(waveform).unsqueeze(0).to(device)
+    mfcc = waveform_to_mfcc(waveform, device).unsqueeze(0).to(device)
     output = model(mfcc)
     _, max_indices = torch.max(output, dim=1)
     return genre_list[max_indices], max_indices.item(), output
@@ -44,5 +44,5 @@ def processor_main(params_pth, mp3_data: str, csv_path):
     model = get_pretrained_model(params_pth, device)
     waveform, _ = mp3_to_tensor(mp3_data)
     genre_list = get_first_row(csv_path)
-    genre_name, max_idx, output = process(waveform, model, genre_list)
+    genre_name, max_idx, output = process(waveform, model, genre_list, device)
     return genre_name, max_idx, output

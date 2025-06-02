@@ -24,8 +24,8 @@ class Trainer:
         self.loss_per_epoch = []
         self.train_check_num = 0
         self.train_correct_num = 0
-        self.train_acc = []
-        self.accuracies = []
+        self.train_acc = [0.]
+        self.accuracies = [0.]
         self.num_trains = 0
         self.num_evals = 0
 
@@ -134,7 +134,7 @@ class Trainer:
         running_print('Train begin.')
         for epoch in range(num_epochs):
             # try:
-            running_print(f'Epoch {epoch + 1} begin, LR: {self.optimizer.param_groups[0]["lr"]:.4f}.')
+            running_print(f'Epoch {epoch + 1} begin, LR: {self.optimizer.param_groups[0]["lr"]:.6f}.')
             for batch, (inputs, labels) in enumerate(self.train_dataloader):
                 self.train_step(inputs, labels, batch, gradient_accumulation_steps, scheduler)
                 # try:
@@ -279,7 +279,7 @@ class Trainer:
                              x_label='epoch', y_label='loss', y_min=0.0, y_max=4.0,
                              y_ticks=[0.2, 1.0, 2.0, 3.0],
                              y_decimals=2, legend_s='loss', grid=True, alpha_s=0.8, line_style_s='-',
-                             line_width_s=0.8, color_s='maroon', marker_s='.', marker_size_s=3)
+                             line_width_s=1.1, color_s='maroon', marker_s='.', marker_size_s=3)
         pass
 
     def plot_accuracies(self, epochs_num_per_test):

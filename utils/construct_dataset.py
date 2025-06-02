@@ -26,9 +26,9 @@ def construct_dataset(track_lists_file, train_file, test_file, limit, num_test):
             while track_ids is None:
                 track_ids = TrackCrawler.crawl_track_id_list(track_list_id,
                                                              is_not_vip=True,
-                                                             duration_limit=(100, 500),
+                                                             duration_limit=(100, 480),
                                                              limit=limit - track_count + int(limit / 1.7),
-                                                             shuffle=True,
+                                                             shuffle=False,
                                                              use_tqdm=True, outer_tqdm=None)
 
             track_ids = set(track_ids)
@@ -68,7 +68,7 @@ def construct_dataset(track_lists_file, train_file, test_file, limit, num_test):
 
 if __name__ == '__main__':
     # 调用构造数据集函数
-    _root = '../data/mini/'
+    _root = '../data/EleM-20/'
     _track_lists_file = _root + 'track_lists.csv'
     _train_file = _root + 'train.csv'
     _test_file = _root + 'test.csv'

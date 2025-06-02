@@ -6,7 +6,6 @@ import torchaudio
 from utils.crawler import TrackCrawler
 from torch.utils.data import Dataset
 from utils import error_print, warning_print
-from utils.auto_connect import auto_connect
 
 
 class TrackDatasetOnline(Dataset):

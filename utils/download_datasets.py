@@ -26,7 +26,7 @@ class DatasetPreprocessor:
                 del mfcc  # 删除GPU引用
                 torch.cuda.empty_cache()  # 立即释放未使用显存
 
-                filename = f"{index:04d}.pt"
+                filename = f"{index:05d}.pt"
                 save_path = self.mfcc_dir / filename
                 torch.save((cpu_mfcc, label), save_path)
 
@@ -65,15 +65,16 @@ def save_all(data_folder: str, saved_folder: str, train: bool):
     else:
         filename = 'test'
     online_dataset = MfccDatesetOnline(f"../data/{data_folder}/{filename}.csv", cuda=True)
-    preprocessor = DatasetPreprocessor(online_dataset, f"../data/{saved_folder}/{filename}", max_workers=8)
+    preprocessor = DatasetPreprocessor(online_dataset, f"../data/{saved_folder}/{filename}", max_workers=4)
     preprocessor.save_all()
 
 
 def repair(index_list):
-    online_dataset = MfccDatesetOnline("../data/mini/train.csv", cuda=True)
-    preprocessor = DatasetPreprocessor(online_dataset, "../data/mini_saved_mfcc/train", max_workers=8)
+    online_dataset = MfccDatesetOnline("../data/EleM-20/train.csv", cuda=True)
+    preprocessor = DatasetPreprocessor(online_dataset, "../data/EleM-20/train", max_workers=1)
     preprocessor.repair(index_list)
 
 
 if __name__ == '__main__':
-    repair([13696])
+    # save_all(data_folder='../data/EleM-20/', saved_folder='../data/EleM-20/', train=True)
+    save_all(data_folder='../data/EleM-20/', saved_folder='../data/EleM-20/', train=False)

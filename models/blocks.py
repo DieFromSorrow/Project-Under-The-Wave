@@ -103,7 +103,7 @@ class MultiHeadSelfAttention(nn.Module):
         attn = attn.softmax(dim=-1)
         x = (attn @ v).transpose(1, 2).reshape(B, T, D)
         x = self.proj(x)
-        return self.layer_norm(x[:, 0, :])  # 取第一个token作为聚合特征
+        return self.layer_norm(x)
 
 
 class ECAResidualBlock1d(nn.Module):
